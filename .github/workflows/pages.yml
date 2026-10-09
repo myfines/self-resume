@@ -1,0 +1,34 @@
+name: Publish resume to GitHub Pages
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download original site
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --connect-timeout 15 -o /tmp/self.zip 'https://gitee.com/aoyecc/self/repository/archive/main.zip'
+          mkdir -p site
+          unzip -q /tmp/self.zip -d /tmp/source
+          cp -a /tmp/source/self-main/. site/
+          test -s site/index.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
